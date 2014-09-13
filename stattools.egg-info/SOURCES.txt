@@ -1,0 +1,5 @@
+setup.py
+stattools.egg-info/PKG-INFO
+stattools.egg-info/SOURCES.txt
+stattools.egg-info/dependency_links.txt
+stattools.egg-info/top_level.txt
