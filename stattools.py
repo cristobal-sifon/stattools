@@ -6,16 +6,17 @@ from matplotlib import cm
 from numpy import random
 from scipy import optimize, stats
 
-def bootstrap(function, t, n_obj=0, n_samples=1000, asym_errors=False):
+def bootstrap(function, t, n_obj=0, n_samples=1000, asym_errors=False,
+              **kwargs):
     """
     Bootstrap resampling for a given statistic
 
     Parameters
     ----------
       function  : function or array-like of functions
-                  the function or functions to be computed. If it is a list of
-                  functions, all functions must take the same number of
-                  arguments
+                  the function or functions to be bootstrapped. If it is a
+                  list of functions, all functions must take the same number
+                  of arguments
       t         : array of floats
                   the values(s) for which the function(s) will be computed.
                   Must contain all the values needed by the function(s).
@@ -30,6 +31,7 @@ def bootstrap(function, t, n_obj=0, n_samples=1000, asym_errors=False):
                   will be the 16th and 84th quantiles of the bootstrap
                   distribution. Otherwise, the error is the standard deviation
                   of the distribution.
+      **kwargs  : any keyword arguments accepted by *function*
 
     Returns
     -------
@@ -41,49 +43,49 @@ def bootstrap(function, t, n_obj=0, n_samples=1000, asym_errors=False):
 
     """
     if type(function) in (list, tuple, numpy.ndarray):
-      def compute(function, tj):
-        if len(tj.shape) > 1:
-          s = [f(*tj) for f in function]
-        else:
-          s = [f(tj) for f in function]
-        return numpy.array(s)
+        def compute(function, tj):
+            if len(tj.shape) > 1:
+                s = [f(*tj) for f in function]
+            else:
+                s = [f(tj) for f in function]
+            return numpy.array(s)
     else:
-      def compute(function, tj):
-        if len(tj.shape) > 1:
-          return function(*tj)
-        return function(tj)
+        def compute(function, tj):
+            if len(tj.shape) > 1:
+                return function(*tj)
+            return function(tj)
 
     t = numpy.array(t)
     if len(t.shape) > 2:
-      raise TypeError('t can have at most 2 dimensions')
+        raise TypeError('t can have at most 2 dimensions')
 
     n = t.shape[-1]
     if n_obj == 0:
       n_obj = n
     x = []
     if len(t.shape) > 1:
-      x = [compute(function, numpy.array([ti[random.randint(0, n, n_obj)] 
-                                          for ti in t])) \
-           for i in xrange(n_samples)]
+        x = [compute(function, numpy.array([ti[random.randint(0, n, n_obj)] 
+                                            for ti in t])) \
+             for i in xrange(n_samples)]
     else:
-      x = [compute(function, t[random.randint(0, n, n_obj)]) \
-           for i in xrange(n_samples)]
+        x = [compute(function, t[random.randint(0, n, n_obj)]) \
+             for i in xrange(n_samples)]
     if asym_errors:
-      def err(y):
-        yo = numpy.median(y)
-        out = (yo - stats.scoreatpercentile(y, 16),
-               stats.scoreatpercentile(y, 84) - yo)
-        return out
-      if type(x[0]) == float:
-        return err(x)
-      else:
-        return [err(xi) for xi in numpy.transpose(x)]
+        def err(y):
+            yo = numpy.median(y)
+            out = (yo - stats.scoreatpercentile(y, 16),
+                   stats.scoreatpercentile(y, 84) - yo)
+            return out
+        if type(x[0]) == float:
+            return err(x)
+        else:
+            return [err(xi) for xi in numpy.transpose(x)]
     else:
-      if type(x[0]) in (float, numpy.float64):
-        return numpy.std(x)
-      else:
-        s = [numpy.std(xi) for xi in numpy.transpose(x)]
-        return numpy.array(s)
+        if type(x[0]) in (float, numpy.float64):
+            return numpy.std(x)
+        else:
+            s = [numpy.std(xi) for xi in numpy.transpose(x)]
+            return numpy.array(s)
 
 def Cbi(z, c=6.):
     """
@@ -92,30 +94,30 @@ def Cbi(z, c=6.):
     mad = MAD(z)
     m = numpy.median(z)
     u = (z - m) / (c * mad)
-    good = numpy.arange(len(u))[abs(u) < 1]
+    good = (abs(u) < 1)
     num = sum((z[good] - m) * (1 - u[good]**2) ** 2)
     den = sum((1 - u[good]**2) ** 2)
     return m + num / den
 
 def contour_levels(x, y=[], bins=10, levels=(0.68,0.95)):
     if len(y) > 0:
-      if len(x) != len(y):
-        msg = 'Invalid input for arrays; must be either 1 2d array'
-        msg += ' or 2 1d arrays'
-        raise ValueError(msg)
+        if len(x) != len(y):
+            msg = 'Invalid input for arrays; must be either 1 2d array'
+            msg += ' or 2 1d arrays'
+            raise ValueError(msg)
     else:
-      if len(numpy.array(x).shape) != 2:
-        msg = 'Invalid input for arrays; must be either 1 2d array'
-        msg += ' or 2 1d arrays'
-        raise ValueError(msg)
+        if len(numpy.array(x).shape) != 2:
+            msg = 'Invalid input for arrays; must be either 1 2d array'
+            msg += ' or 2 1d arrays'
+            raise ValueError(msg)
     def findlevel(lo, hist, level):
-      return 1.0 * hist[hist >= lo].sum()/hist.sum() - level
+        return 1.0 * hist[hist >= lo].sum()/hist.sum() - level
     if len(x) == len(y):
-      hist, xedges, yedges = numpy.histogram2d(x, y, bins=bins)
-      hist = numpy.transpose(hist)
-      extent = (xedges[0], xedges[-1], yedges[0], yedges[-1])
+        hist, xedges, yedges = numpy.histogram2d(x, y, bins=bins)
+        hist = numpy.transpose(hist)
+        extent = (xedges[0], xedges[-1], yedges[0], yedges[-1])
     elif len(y) == 0:
-      hist = numpy.array(x)
+        hist = numpy.array(x)
     lvs = [optimize.bisect(findlevel, hist.min(), hist.max(),
                            args=(hist, l)) for l in levels]
     return lvs
@@ -246,6 +248,7 @@ def corner(X, names='', labels='', bins=None, clevels=(0.68,0.95),
             if len(labels) >= ndim:
                 pylab.xlabel(labels[i], fontsize=fontsize)
         # to avoid overcrowding tick labels
+        pylab.xticks(rotation=45)
         tickloc = pylab.MaxNLocator(5)
         ax.xaxis.set_major_locator(tickloc)
         plot_ranges.append(ax.get_xlim())
@@ -314,8 +317,8 @@ def jackknife(function, t, n_remove=1, n_samples=1000,
     Parameters
     ----------
       function  : function or array-like of functions
-                  the function or functions to be computed. If it is a list of
-                  functions, all functions must take the same number of
+                  the function or functions to be jackknifed. If it is a list
+                  of functions, all functions must take the same number of
                   arguments
       t         : array of floats
                   the values(s) for which the function(s) will be computed.
@@ -323,69 +326,69 @@ def jackknife(function, t, n_remove=1, n_samples=1000,
       n_remove  : int (default 1)
                   number of objects to remove for each sample
       n_samples : int (default 1000)
-                  number of bootstrap iterations
+                  number of iterations
       asym_errors : bool (default False)
                   whether to return asymmetric errors. If True, the errors
-                  will be the 16th and 84th quantiles of the bootstrap
+                  will be the 16th and 84th quantiles of the jackknife
                   distribution. Otherwise, the error is the standard deviation
                   of the distribution.
-      **kwargs  : any kwargs accepted by function()
+      **kwargs  : any keyword arguments accepted by *function*
 
     Returns
     -------
       errors    : float or array of floats
-                  bootstrap errors. If stats is a list, then errors is a list
+                  jackknife errors. If stats is a list, then errors is a list
                   with the same number of objects. For each stat, will be
                   either a float (asym_errors==False) or a list of two floats
                   (asym_errors==True).
 
     """
     if type(function) in (list, tuple, numpy.ndarray):
-      def compute(function, tj, **kwargs):
-        if len(tj.shape) > 1:
-          s = [f(*tj, **kwargs) for f in function]
-        else:
-          s = [f(tj, **kwargs) for f in function]
-        return numpy.array(s)
+        def compute(function, tj, **kwargs):
+            if len(tj.shape) > 1:
+                s = [f(*tj, **kwargs) for f in function]
+            else:
+                s = [f(tj, **kwargs) for f in function]
+            return numpy.array(s)
     else:
-      def compute(function, tj, **kwargs):
-        if len(tj.shape) > 1:
-          return function(*tj, **kwargs)
-        return function(tj, **kwargs)
+        def compute(function, tj, **kwargs):
+            if len(tj.shape) > 1:
+                return function(*tj, **kwargs)
+            return function(tj, **kwargs)
 
     t = numpy.array(t)
     if len(t.shape) > 2:
-      raise TypeError('t can have at most 2 dimensions')
+        raise TypeError('t can have at most 2 dimensions')
 
     n = t.shape[-1]
     if n_obj == 0:
-      n_obj = n
+        n_obj = n
     x = []
     if len(t.shape) > 1:
-      for ii in xrange(n_samples):
-        j = random.randint(0, n, n-n_remove)
-        t1 = numpy.array([ti[j] for ti in t])
-        x.append(compute(function, t1, **kwargs))
+        for ii in xrange(n_samples):
+            j = random.randint(0, n, n-n_remove)
+            t1 = numpy.array([ti[j] for ti in t])
+            x.append(compute(function, t1, **kwargs))
     else:
-      for i in xrange(n_samples):
-        j = random.randint(0, n, n-n_remove)
-        x.append(compute(function, t[j], **kwargs))
+        for i in xrange(n_samples):
+            j = random.randint(0, n, n-n_remove)
+            x.append(compute(function, t[j], **kwargs))
     if asym_errors:
-      def err(y):
-        yo = numpy.median(y)
-        out = (yo - stats.scoreatpercentile(y, 16),
-               stats.scoreatpercentile(y, 84) - yo)
-        return out
-      if type(x[0]) == float:
-        return err(x)
-      else:
-        return [err(xi) for xi in numpy.transpose(x)]
+        def err(y):
+            yo = numpy.median(y)
+            out = (yo - stats.scoreatpercentile(y, 16),
+                   stats.scoreatpercentile(y, 84) - yo)
+            return out
+        if type(x[0]) == float:
+            return err(x)
+        else:
+            return [err(xi) for xi in numpy.transpose(x)]
     else:
-      if type(x[0]) == float:
-        return numpy.std(x)
-      else:
-        s = [numpy.std(xi) for xi in numpy.transpose(x)]
-        return numpy.array(s)
+        if type(x[0]) == float:
+            return numpy.std(x)
+        else:
+            s = [numpy.std(xi) for xi in numpy.transpose(x)]
+            return numpy.array(s)
 
 def MAD(z):
     n = numpy.absolute(z - numpy.median(z))
@@ -402,7 +405,7 @@ def Sbi(z, c=9., location='median'):
     elif location == 'biweight':
         m = Cbi(z)
     u = (z - m) / (c * mad)
-    good = numpy.arange(n)[abs(u) < 1]
+    good = (abs(u) < 1)
     num = sum((z[good] - m) ** 2 * (1 - u[good]**2) ** 4)
     den = sum((1 - u[good]**2) * (1 - 5 * u[good]**2))
     return (n / numpy.sqrt(n - 1)) * numpy.sqrt(num) / abs(den)
@@ -420,8 +423,8 @@ def sigmaclip(sample, clip=3, loc=numpy.median, scale=numpy.std,
     std = scale(sample)
     sample_med = sample - med
     if ret == 'sample':
-      return sample[abs(sample_med) < clip * std]
+        return sample[abs(sample_med) < clip * std]
     elif ret == 'indices':
-      ind = numpy.arange(len(sample))
-      return ind[abs(sample_med) < clip * std]
+        ind = numpy.arange(len(sample))
+        return ind[abs(sample_med) < clip * std]
     return
