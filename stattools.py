@@ -87,13 +87,13 @@ def bootstrap(function, t, n_obj=0, n_samples=1000, asym_errors=False,
             s = [numpy.std(xi) for xi in numpy.transpose(x)]
             return numpy.array(s)
 
-def Cbi(z, c=6.):
+def Cbi(x, c=6.):
     """
     Biweight Location estimator
     """
-    mad = MAD(z)
-    m = numpy.median(z)
-    u = (z - m) / (c * mad)
+    mad = MAD(x)
+    m = numpy.median(x)
+    u = (x - m) / (c * mad)
     good = (abs(u) < 1)
     num = sum((z[good] - m) * (1 - u[good]**2) ** 2)
     den = sum((1 - u[good]**2) ** 2)
@@ -390,21 +390,21 @@ def jackknife(function, t, n_remove=1, n_samples=1000,
             s = [numpy.std(xi) for xi in numpy.transpose(x)]
             return numpy.array(s)
 
-def MAD(z):
-    n = numpy.absolute(z - numpy.median(z))
+def MAD(x):
+    n = numpy.absolute(x - numpy.median(x))
     return numpy.median(n)
 
-def Sbi(z, c=9., location='median'):
+def Sbi(x, c=9., location='median'):
     """
     Biweight Scale estimator
     """
-    n = len(z)
-    mad = MAD(z)
+    n = len(x)
+    mad = MAD(x)
     if location == 'median':
-        m = numpy.median(z)
+        m = numpy.median(x)
     elif location == 'biweight':
-        m = Cbi(z)
-    u = (z - m) / (c * mad)
+        m = Cbi(x)
+    u = (x - m) / (c * mad)
     good = (abs(u) < 1)
     num = sum((z[good] - m) ** 2 * (1 - u[good]**2) ** 4)
     den = sum((1 - u[good]**2) * (1 - 5 * u[good]**2))
