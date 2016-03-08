@@ -43,7 +43,8 @@ def bootstrap(function, t, n_obj=0, n_samples=1000,
                   (asym_errors==True).
 
     """
-    if type(function) in (list, tuple, numpy.ndarray):
+    print "what's going on?"
+    if hasattr(function, '__iter__'):
         def compute(function, tj):
             if len(tj.shape) > 1:
                 s = [f(*tj) for f in function]
@@ -76,12 +77,12 @@ def bootstrap(function, t, n_obj=0, n_samples=1000,
             yo = numpy.median(y)
             out = (yo - stats.scoreatpercentile(y, 16),
                    stats.scoreatpercentile(y, 84) - yo)
-        if type(x[0]) == float:
+        if isintance(x[0], float):
             out = err(x)
         else:
             out = [err(xi) for xi in numpy.transpose(x)]
     else:
-        if type(x[0]) in (float, numpy.float64):
+        if isinstance(x[0], float):
             out = numpy.std(x)
         else:
             s = [numpy.std(xi) for xi in numpy.transpose(x)]
@@ -136,7 +137,7 @@ def jackknife(function, t, n_remove=1, n_samples=1000,
                   (asym_errors==True).
 
     """
-    if type(function) in (list, tuple, numpy.ndarray):
+    if hasattr(function, '__iter__'):
         def compute(function, tj, **kwargs):
             if len(tj.shape) > 1:
                 s = [f(*tj, **kwargs) for f in function]
@@ -171,12 +172,12 @@ def jackknife(function, t, n_remove=1, n_samples=1000,
             yo = numpy.median(y)
             out = (yo - stats.scoreatpercentile(y, 16),
                    stats.scoreatpercentile(y, 84) - yo)
-        if type(x[0]) == float:
+        if isinstance(x[0], float):
             out = err(x)
         else:
             out = [err(xi) for xi in numpy.transpose(x)]
     else:
-        if type(x[0]) == float:
+        if isinstance(x[0], float):
             out = numpy.std(x)
         else:
             s = [numpy.std(xi) for xi in numpy.transpose(x)]
