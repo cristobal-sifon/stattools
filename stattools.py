@@ -43,7 +43,6 @@ def bootstrap(function, t, n_obj=0, n_samples=1000,
                   (asym_errors==True).
 
     """
-    print "what's going on?"
     if hasattr(function, '__iter__'):
         def compute(function, tj):
             if len(tj.shape) > 1:
@@ -87,6 +86,7 @@ def bootstrap(function, t, n_obj=0, n_samples=1000,
         else:
             s = [numpy.std(xi) for xi in numpy.transpose(x)]
             out = numpy.array(s)
+    print 'out =', out
     if full_output:
         return out, numpy.array(x)
     return out
