@@ -77,7 +77,7 @@ def bootstrap(function, t, n_obj=0, n_samples=1000,
             yo = numpy.median(y)
             out = (yo - stats.scoreatpercentile(y, 16),
                    stats.scoreatpercentile(y, 84) - yo)
-        if isintance(x[0], float):
+        if isinstance(x[0], float):
             out = err(x)
         else:
             out = [err(xi) for xi in numpy.transpose(x)]
