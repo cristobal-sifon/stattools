@@ -74,8 +74,7 @@ def bootstrap(function, t, n_obj=0, n_samples=1000,
     if asym_errors:
         def err(y):
             yo = numpy.median(y)
-            out = (yo - stats.scoreatpercentile(y, 16),
-                   stats.scoreatpercentile(y, 84) - yo)
+            return numpy.absolute(numpy.percentile(y, [16,84]) - yo)
         if isinstance(x[0], float):
             out = err(x)
         else:
@@ -170,8 +169,7 @@ def jackknife(function, t, n_remove=1, n_samples=1000,
     if asym_errors:
         def err(y):
             yo = numpy.median(y)
-            out = (yo - stats.scoreatpercentile(y, 16),
-                   stats.scoreatpercentile(y, 84) - yo)
+            return numpy.absolute(numpy.percentile(y, [16,84]) - yo)
         if isinstance(x[0], float):
             out = err(x)
         else:
