@@ -85,7 +85,6 @@ def bootstrap(function, t, n_obj=0, n_samples=1000,
         else:
             s = [numpy.std(xi) for xi in numpy.transpose(x)]
             out = numpy.array(s)
-    print 'out =', out
     if full_output:
         return out, numpy.array(x)
     return out
