@@ -1,11 +1,21 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
+from __future__ import absolute_import, division, print_function
+
 import numpy
-from itertools import count, izip
+import sys
+from itertools import count
 from matplotlib import cm
 from numpy import random
 from scipy import optimize, stats
 from scipy.interpolate import interp1d
+
+if sys.version_info[0] == 2:
+    from itertools import izip
+else:
+    izip = zip
+    xrange = range
+
 
 def bootstrap(function, t, n_obj=0, n_samples=1000,
               full_output=False, asym_errors=False, **kwargs):
@@ -89,6 +99,7 @@ def bootstrap(function, t, n_obj=0, n_samples=1000,
         return out, numpy.array(x)
     return out
 
+
 def Cbi(x, c=6.):
     """
     Biweight Location estimator
@@ -100,6 +111,7 @@ def Cbi(x, c=6.):
     num = sum((x[good] - m) * (1 - u[good]**2) ** 2)
     den = sum((1 - u[good]**2) ** 2)
     return m + num / den
+
 
 def jackknife(function, t, n_remove=1, n_samples=1000,
               full_output=False, asym_errors=False, **kwargs):
@@ -183,9 +195,11 @@ def jackknife(function, t, n_remove=1, n_samples=1000,
         return out, numpy.array(x)
     return out
 
+
 def MAD(x):
     n = numpy.absolute(x - numpy.median(x))
     return numpy.median(n)
+
 
 def percentile_from_histogram(hist, centers, p):
     """
@@ -198,6 +212,7 @@ def percentile_from_histogram(hist, centers, p):
         return cdf_thin(x) - p/100.
     val = optimize.brentq(root, centers[0], centers[-1])
     return val
+
 
 def Sbi(x, c=9., location='median'):
     """
@@ -213,7 +228,8 @@ def Sbi(x, c=9., location='median'):
     good = (abs(u) < 1)
     num = sum((x[good] - m) ** 2 * (1 - u[good]**2) ** 4)
     den = sum((1 - u[good]**2) * (1 - 5 * u[good]**2))
-    return (n / numpy.sqrt(n - 1)) * numpy.sqrt(num) / abs(den)
+    return (n / (n - 1)**0.5) * num**0.5 / abs(den)
+
 
 def sigmaclip(sample, clip=3, loc=numpy.median, scale=numpy.std,
               ret='sample'):
@@ -233,3 +249,5 @@ def sigmaclip(sample, clip=3, loc=numpy.median, scale=numpy.std,
         ind = numpy.arange(len(sample))
         return ind[abs(sample_med) < clip * std]
     return
+
+
