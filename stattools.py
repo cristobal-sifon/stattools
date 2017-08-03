@@ -6,7 +6,7 @@ import numpy
 import sys
 from itertools import count
 from matplotlib import cm
-from numpy import random
+from numpy import cumsum, digitize, random
 from scipy import optimize, stats
 from scipy.interpolate import interp1d
 
@@ -111,6 +111,18 @@ def Cbi(x, c=6.):
     num = sum((x[good] - m) * (1 - u[good]**2) ** 2)
     den = sum((1 - u[good]**2) ** 2)
     return m + num / den
+
+
+def draw(x, weights, size=None):
+    """
+    Draw samples from an arbitrary distribution. In general, `x` and
+    `weights` would be the range and height of a histogram.
+
+    """
+    weights /= numpy.sum(weights)
+    if size is None:
+        return x[digitize(random.random(1), cumsum(weights))][0]
+    return x[digitize(random.random(size), cumsum(weights))]
 
 
 def jackknife(function, t, n_remove=1, n_samples=1000,
