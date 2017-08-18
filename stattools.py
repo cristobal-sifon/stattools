@@ -263,3 +263,22 @@ def sigmaclip(sample, clip=3, loc=numpy.median, scale=numpy.std,
     return
 
 
+def wstd(X, weights, xo=None):
+    """
+    Compute a weighted standard deviation
+
+    Parameters
+    ----------
+        X : array of data points
+        weights : array of weights, same shape as `X`
+        xo : array of means, one entry per dimension in `X` (optional)
+
+    """
+    # if means are not given, calculate weighted means
+    if xo == None:
+        xo = (w*X).sum() / w.sum()
+    j = (w > 0)
+    num = (w*(X-xo)**2).sum()
+    den = (w[j].size-1.) / w[j].size * w.sum()
+    return (num/den)**0.5
+
