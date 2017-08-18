@@ -278,7 +278,7 @@ def wstd(X, weights, xo=None):
     if xo == None:
         xo = (w*X).sum() / w.sum()
     j = (w > 0)
-    num = (w*(X-xo)**2).sum()
-    den = (w[j].size-1.) / w[j].size * w.sum()
+    num = (w * (X-xo)**2).sum()
+    den = (j.sum()-1.) / j.sum() * w.sum()
     return (num/den)**0.5
 
