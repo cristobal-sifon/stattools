@@ -1,6 +1,9 @@
 README.md
 setup.py
+stattools/__init__.py
+stattools/stattools.py
 stattools.egg-info/PKG-INFO
 stattools.egg-info/SOURCES.txt
 stattools.egg-info/dependency_links.txt
+stattools.egg-info/not-zip-safe
 stattools.egg-info/top_level.txt
