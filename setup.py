@@ -37,4 +37,5 @@ setup(name='stattools',
       author='Cristobal Sifon',
       author_email='sifon@astro.princeton.edu',
       url='https://github.com/cristobal-sifon/stattools/',
-      modules=['stattools'])
+      packages=['stattools'],
+      zip_safe=False)

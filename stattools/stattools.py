@@ -2,13 +2,14 @@
 # -*- coding: utf-8 -*-
 from __future__ import absolute_import, division, print_function
 
-import numpy
+import numpy as np
 import sys
 from itertools import count
 from matplotlib import cm
 from numpy import cumsum, digitize, random
 from scipy import optimize, stats
 from scipy.interpolate import interp1d
+from scipy.special import erf
 
 if sys.version_info[0] == 2:
     from itertools import izip
@@ -59,14 +60,14 @@ def bootstrap(function, t, n_obj=0, n_samples=1000,
                 s = [f(*tj) for f in function]
             else:
                 s = [f(tj) for f in function]
-            return numpy.array(s)
+            return np.array(s)
     else:
         def compute(function, tj):
             if len(tj.shape) > 1:
                 return function(*tj)
             return function(tj)
 
-    t = numpy.array(t)
+    t = np.array(t)
     if len(t.shape) > 2:
         raise TypeError('data array can have at most 2 dimensions')
 
@@ -75,7 +76,7 @@ def bootstrap(function, t, n_obj=0, n_samples=1000,
       n_obj = n
     x = []
     if len(t.shape) > 1:
-        x = [compute(function, numpy.array([ti[random.randint(0, n, n_obj)]
+        x = [compute(function, np.array([ti[random.randint(0, n, n_obj)]
                                             for ti in t])) \
              for i in xrange(n_samples)]
     else:
@@ -83,20 +84,20 @@ def bootstrap(function, t, n_obj=0, n_samples=1000,
              for i in xrange(n_samples)]
     if asym_errors:
         def err(y):
-            yo = numpy.median(y)
-            return numpy.absolute(numpy.percentile(y, [16,84]) - yo)
+            yo = np.median(y)
+            return np.absolute(np.percentile(y, [16,84]) - yo)
         if isinstance(x[0], float):
             out = err(x)
         else:
-            out = [err(xi) for xi in numpy.transpose(x)]
+            out = [err(xi) for xi in np.transpose(x)]
     else:
         if isinstance(x[0], float):
-            out = numpy.std(x)
+            out = np.std(x)
         else:
-            s = [numpy.std(xi) for xi in numpy.transpose(x)]
-            out = numpy.array(s)
+            s = [np.std(xi) for xi in np.transpose(x)]
+            out = np.array(s)
     if full_output:
-        return out, numpy.array(x)
+        return out, np.array(x)
     return out
 
 
@@ -105,7 +106,7 @@ def Cbi(x, c=6.):
     Biweight Location estimator
     """
     mad = MAD(x)
-    m = numpy.median(x)
+    m = np.median(x)
     u = (x - m) / (c * mad)
     good = (abs(u) < 1)
     num = sum((x[good] - m) * (1 - u[good]**2) ** 2)
@@ -119,10 +120,30 @@ def draw(x, weights, size=None):
     `weights` would be the range and height of a histogram.
 
     """
-    weights /= numpy.sum(weights)
+    weights /= np.sum(weights)
     if size is None:
         return x[digitize(random.random(1), cumsum(weights))][0]
     return x[digitize(random.random(size), cumsum(weights))]
+
+
+def generalized_erf(x, a, b, c, d=0):
+    """
+    Error function, generalized to have arbitrary minimum, maximum,
+    and transition location
+
+    Parameters
+    ----------
+    a : float or array-like
+        function maximum, reached for `x >> c`
+    b : float or array-like
+        defines width of the function. `b > 1` makes this function
+        transition faster, while `b < 1` makes the transition slower
+    c : float or array-like
+        location of the function mid point
+    d : float or array-like
+        floor of the function, reached for `x << c`
+    """
+    return d + 0.5*a*(1 + erf(b*x-c))
 
 
 def jackknife(function, t, n_remove=1, n_samples=1000,
@@ -165,14 +186,14 @@ def jackknife(function, t, n_remove=1, n_samples=1000,
                 s = [f(*tj, **kwargs) for f in function]
             else:
                 s = [f(tj, **kwargs) for f in function]
-            return numpy.array(s)
+            return np.array(s)
     else:
         def compute(function, tj, **kwargs):
             if len(tj.shape) > 1:
                 return function(*tj, **kwargs)
             return function(tj, **kwargs)
 
-    t = numpy.array(t)
+    t = np.array(t)
     if len(t.shape) > 2:
         raise TypeError('t can have at most 2 dimensions')
 
@@ -183,7 +204,7 @@ def jackknife(function, t, n_remove=1, n_samples=1000,
     if len(t.shape) > 1:
         for ii in xrange(n_samples):
             j = random.randint(0, n, n-n_remove)
-            t1 = numpy.array([ti[j] for ti in t])
+            t1 = np.array([ti[j] for ti in t])
             x.append(compute(function, t1, **kwargs))
     else:
         for i in xrange(n_samples):
@@ -191,26 +212,26 @@ def jackknife(function, t, n_remove=1, n_samples=1000,
             x.append(compute(function, t[j], **kwargs))
     if asym_errors:
         def err(y):
-            yo = numpy.median(y)
-            return numpy.absolute(numpy.percentile(y, [16,84]) - yo)
+            yo = np.median(y)
+            return np.absolute(np.percentile(y, [16,84]) - yo)
         if isinstance(x[0], float):
             out = err(x)
         else:
-            out = [err(xi) for xi in numpy.transpose(x)]
+            out = [err(xi) for xi in np.transpose(x)]
     else:
         if isinstance(x[0], float):
-            out = numpy.std(x)
+            out = np.std(x)
         else:
-            s = [numpy.std(xi) for xi in numpy.transpose(x)]
-            out = numpy.array(s)
+            s = [np.std(xi) for xi in np.transpose(x)]
+            out = np.array(s)
     if full_output:
-        return out, numpy.array(x)
+        return out, np.array(x)
     return out
 
 
 def MAD(x):
-    n = numpy.absolute(x - numpy.median(x))
-    return numpy.median(n)
+    n = np.absolute(x - np.median(x))
+    return np.median(n)
 
 
 def percentile_from_histogram(hist, centers, p):
@@ -218,7 +239,7 @@ def percentile_from_histogram(hist, centers, p):
     return the p-th percentile by interpolating a histogram's CDF
 
     """
-    cdf = numpy.cumsum(hist)
+    cdf = np.cumsum(hist)
     cdf_thin = interp1d(centers, cdf/cdf.max(), kind='slinear')
     def root(x):
         return cdf_thin(x) - p/100.
@@ -233,7 +254,7 @@ def Sbi(x, c=9., location='median'):
     n = len(x)
     mad = MAD(x)
     if location == 'median':
-        m = numpy.median(x)
+        m = np.median(x)
     elif location == 'biweight':
         m = Cbi(x)
     u = (x - m) / (c * mad)
@@ -243,7 +264,7 @@ def Sbi(x, c=9., location='median'):
     return (n / (n - 1)**0.5) * num**0.5 / abs(den)
 
 
-def sigmaclip(sample, clip=3, loc=numpy.median, scale=numpy.std,
+def sigmaclip(sample, clip=3, loc=np.median, scale=np.std,
               ret='sample'):
     """
     returns the resulting array, the median (or average), and the standard
@@ -251,14 +272,14 @@ def sigmaclip(sample, clip=3, loc=numpy.median, scale=numpy.std,
     returns the resulting sample, or 'indices', in which case it returns the
     indices of the returing sample in the original one.
     """
-    sample = numpy.array(sample)
+    sample = np.array(sample)
     med = loc(sample)
     std = scale(sample)
     sample_med = sample - med
     if ret == 'sample':
         return sample[abs(sample_med) < clip * std]
     elif ret == 'indices':
-        ind = numpy.arange(len(sample))
+        ind = np.arange(len(sample))
         return ind[abs(sample_med) < clip * std]
     return
 
@@ -277,10 +298,10 @@ def wstd(X, weights, xo=None, axis=None):
     """
     # if means are not given, calculate weighted means
     if xo == None:
-        xo = numpy.sum(weights*X, axis=axis) / numpy.sum(weights, axis=axis)
+        xo = np.sum(weights*X, axis=axis) / np.sum(weights, axis=axis)
     j = (weights > 0)
-    num = numpy.sum(weights * (X-xo)**2, axis=axis)
-    den = (numpy.sum(j, axis=axis)-1.) / numpy.sum(j, axis=axis) \
-          * numpy.sum(weights, axis=axis)
+    num = np.sum(weights * (X-xo)**2, axis=axis)
+    den = (np.sum(j, axis=axis)-1.) / np.sum(j, axis=axis) \
+          * np.sum(weights, axis=axis)
     return (num/den)**0.5
 
