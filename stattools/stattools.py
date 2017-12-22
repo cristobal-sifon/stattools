@@ -126,7 +126,7 @@ def draw(x, weights, size=None):
     return x[digitize(random.random(size), cumsum(weights))]
 
 
-def generalized_erf(x, a, b, c, d=0):
+def generalized_erf(x, a, b, c=1, d=0):
     """
     Error function, generalized to have arbitrary minimum, maximum,
     and transition location
@@ -134,16 +134,16 @@ def generalized_erf(x, a, b, c, d=0):
     Parameters
     ----------
     a : float or array-like
-        function maximum, reached for `x >> c`
-    b : float or array-like
         defines width of the function. `b > 1` makes this function
         transition faster, while `b < 1` makes the transition slower
-    c : float or array-like
+    b : float or array-like
         location of the function mid point
+    c : float or array-like
+        function maximum, reached for `x >> c`
     d : float or array-like
         floor of the function, reached for `x << c`
     """
-    return d + 0.5*a*(1 + erf(b*x-c))
+    return d + 0.5*c*(1 + erf(a*x-b))
 
 
 def jackknife(function, t, n_remove=1, n_samples=1000,
