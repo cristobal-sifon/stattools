@@ -247,6 +247,46 @@ def percentile_from_histogram(hist, centers, p):
     return val
 
 
+def rms(x, clip=3, which='both', center='median', tol=1e-3):
+    """Root-mean-square value
+
+    Typically used to calculate the noise in an image. Infinite or nan
+    values are discarded, and then pixels above and below `clip` (in
+    units of the standard deviation) are removed iteratively.
+
+    Parameters
+    ----------
+    x : `np.array`
+        array from which the rms will be calculated
+    clip : `float`
+        clipping threshold, in units of the standard deviation. Set to
+        zero to run without clipping (will simply return the standard
+        deviation)
+    which : {'positive','negative','both'}
+        whether to clip in the positive or negative direction, or both
+    center : {'mean','median','Cbi'}
+        statistic to use as the central value. 'Cbi' is the biweight
+        estimate, as implemented in this module.
+    tol : float
+        minimum fractional difference between iterations in order to be
+        considered converged
+    """
+    x = x[np.isfinite(x)]
+    s = 10 * np.std(x)
+    if clip == 0:
+        return s
+    m = {'median': np.median, 'mean': np.mean, 'Cbi': Cbi}
+    m = m[center]
+    while (np.std(x)/s - 1) > tol:
+        s = np.std(x)
+        mx = m(x)
+        if which in ('both', 'positive'):
+            x = x[x - mx < clip*s]
+        if which in ('both', 'negative'):
+            x = x[mx - x < clip*s]
+    return np.std(x)
+
+
 def Sbi(x, c=9., location='median'):
     """
     Biweight Scale estimator
