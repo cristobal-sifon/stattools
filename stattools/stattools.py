@@ -117,8 +117,9 @@ def Cbi(x, c=6.):
 def draw(x, weights, size=None):
     """
     Draw samples from an arbitrary distribution. In general, `x` and
-    `weights` would be the range and height of a histogram.
-
+    `weights` would be the range and height of a histogram. Note that
+    the samples are drawn from `x`, so a sparse sampling of `x` will
+    result in a sparse sampling of the random draws as well.
     """
     weights /= np.sum(weights)
     if size is None:
