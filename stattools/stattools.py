@@ -135,8 +135,8 @@ def generalized_erf(x, a, b, c=1, d=0):
     Parameters
     ----------
     a : float or array-like
-        defines width of the function. `b > 1` makes this function
-        transition faster, while `b < 1` makes the transition slower
+        defines width of the function. `a > 1` makes this function
+        transition faster, while `a < 1` makes the transition slower
     b : float or array-like
         location of the function mid point
     c : float or array-like
