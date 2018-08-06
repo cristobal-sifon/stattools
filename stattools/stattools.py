@@ -144,7 +144,7 @@ def generalized_erf(x, a, b, c=1, d=0):
     d : float or array-like
         floor of the function, reached for `x << c`
     """
-    return d + 0.5*c*(1 + erf(a*x-b))
+    return d + 0.5*c*(1 + erf(a*(x-b)))
 
 
 def jackknife(function, t, n_remove=1, n_samples=1000,
