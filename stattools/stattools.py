@@ -12,10 +12,8 @@ from scipy.interpolate import interp1d
 from scipy.special import erf
 
 if sys.version_info[0] == 2:
-    from itertools import izip
-else:
-    izip = zip
-    xrange = range
+    from itertools import izip as zip
+    range = xrange
 
 
 def bootstrap(function, t, n_obj=0, n_samples=1000,
