@@ -16,6 +16,87 @@ if sys.version_info[0] == 2:
     range = xrange
 
 
+def asym_normal_pdf(x, mean, std_low, std_high):
+    """Produce an asymmetric PDF composed of half-Gaussians on each
+    side
+
+    Parameters
+    ----------
+    x : array of floats, shape (N,)
+        independent variable.
+    mean, std_low, std_high : float or array of floats, shape (M,)
+        mean and 16th and 84th percentiles, to be used as standard
+        deviations for each half-Gaussian.
+
+    Returns
+    -------
+    pdf : array, shape (M,N) (see notes)
+
+    Notes
+    -----
+    Either or both x and {mean,std_low,std_high} can have more than one
+    dimension. The shape of ``pdf`` is in general
+    ``(*mean.shape,*x.shape)`` (assuming all of {mean,std_low,std_high}
+    have the same shape, although any of them can always be a scalar).
+    For instance, if ``x.shape==(M,N,O)`` and ``mean.shape==(P,Q)``
+    then ``pdf.shape==(P,Q,M,N,O)``.
+
+    """
+    if np.iterable(x):
+       assert len(x.shape) == 1, 'x must be 1-dimensional'
+    err_msg = 'argument {0} must be float or array of floats'
+    for var, name in zip((x,mean,std_low,std_high),
+                    ('x','mean','std_low','std_high')):
+        try: var / 1
+        except: raise TypeError(err_msg.format(name))
+    # raises Exception if shapes don't match
+    mean * std_low 
+    mean * std_high
+    std_low * std_high
+    # OK let's go
+    f = lambda t, mu, s: np.exp(-(t-mu)**2/(2*s**2))
+    # use the shape with the most dimensions
+    shapes = [i.shape if np.iterable(i) else (1,)
+              for i in (mean,std_low,std_high)]
+    j = np.argmax([len(s) for s in shapes])
+    shape = shapes[j]
+    # simpler if only scalars
+    if shape == (1,) and not np.iterable(x):
+        if x < mean:
+            return f(x, mean, std_low)
+        return f(x, mean, std_high)
+    # make them all the same shape
+    mean = mean * np.ones(shape)
+    std_low = std_low * np.ones(shape)
+    std_high = std_high * np.ones(shape)
+    if np.iterable(x):
+        vars = [mean, std_low, std_high]
+        for i, var in enumerate(vars):
+            if not np.iterable(var):
+                var = np.array([var])
+            vars[i] = np.repeat(np.expand_dims(var, -1), x.size, -1)
+        mean, std_low, std_high = vars
+    # define output shape
+    if np.iterable(x):
+        shape = (*shape, x.size)
+    else:
+        x = np.array([x])
+    if x.size == 1:
+        x = x * np.ones(shape)
+    else:
+        x = np.array(list(x)*np.prod(shape[:-1])).reshape(shape)
+    pdf = np.zeros(x.size)
+    # need to flatten to allow masking
+    x = x.reshape(-1)
+    mean = mean.reshape(-1)
+    std_low = std_low.reshape(-1)
+    std_high = std_high.reshape(-1)
+    j = (x < mean)
+    pdf[j] = f(x[j], mean[j], std_low[j])
+    pdf[~j] = f(x[~j], mean[~j], std_high[~j])
+    return pdf.reshape(shape)
+
+
 def bootstrap(function, t, n_obj=0, n_samples=1000,
               full_output=False, asym_errors=False, **kwargs):
     """
