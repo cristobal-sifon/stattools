@@ -327,6 +327,50 @@ def percentile_from_histogram(hist, centers, p):
     return val
 
 
+def pte(chi2, cov, cinv=None, n_samples=10000, return_samples=False):
+    """Probability to exceed chi2 by Monte Carlo sampling the
+    covariance matrix
+
+    Parameters
+    ----------
+    chi2 : float
+        measured chi2
+    cov : ndarray, shape (N[,N])
+        if 2d, then this is the covariance matrix. If 1d, then it
+        represents errorbars, i.e., the sqrt of the diagonals of the
+        covariance matrix. A diagonal covariance matrix will be
+        constructed in this case.
+    cinv : ndarray, optional
+        inverse of covariance matrix, used to calculate chi2 of MC
+        samples. If not provided will be calculated with
+        ``np.linalg.pinv``
+    n_samples : int, optional
+        Number of Monte Carlo samples to draw.
+    return_samples : bool, optional
+        Whether to return the full Monte Carlo chi2 vector
+
+    Returns
+    -------
+    pte : float
+        probability to exceed measured chi2
+    chi2_mc : np.ndarray, optional
+        array of sampled chi2 values. Only returned if
+        ``return_samples==True``
+    """
+    if len(cov.shape) == 1:
+        cov = np.eye(cov.size) * cov
+    assert len(cov.shape) == 2
+    assert cov.shape[0] == cov.shape[1]
+    if cinv is None:
+        cinv = np.linalg.pinv(cov)
+    mc = stats.multivariate_normal.rvs(cov=cov, size=n_samples)
+    chi2_mc = np.array([np.dot(i, np.dot(cinv, i)) for i in mc])
+    pte = (chi2_mc > chi2).sum() / n_samples
+    if return_samples:
+        return pte, chi2_mc
+    return pte
+
+
 def rms(x, clip=3, which='both', center='median', tol=1e-3):
     """Root-mean-square value
 
