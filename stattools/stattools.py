@@ -1,19 +1,8 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
-from __future__ import absolute_import, division, print_function
-
 import numpy as np
-import sys
-from itertools import count
-from matplotlib import cm
-from numpy import cumsum, digitize, random
 from scipy import optimize, stats
 from scipy.interpolate import interp1d
 from scipy.special import erf
-
-if sys.version_info[0] == 2:
-    from itertools import izip as zip
-    range = xrange
 
 
 def asym_normal_pdf(x, mean, std_low, std_high):
@@ -31,6 +20,7 @@ def asym_normal_pdf(x, mean, std_low, std_high):
     Returns
     -------
     pdf : array, shape (M,N) (see notes)
+        unnormalized probability density function
 
     Notes
     -----
@@ -43,21 +33,23 @@ def asym_normal_pdf(x, mean, std_low, std_high):
 
     """
     if np.iterable(x):
-       assert len(x.shape) == 1, 'x must be 1-dimensional'
-    err_msg = 'argument {0} must be float or array of floats'
-    for var, name in zip((x,mean,std_low,std_high),
-                    ('x','mean','std_low','std_high')):
-        try: var / 1
-        except: raise TypeError(err_msg.format(name))
+        assert len(x.shape) == 1, "x must be 1-dimensional"
+    err_msg = "argument {0} must be float or array of floats"
+    for var, name in zip(
+        (x, mean, std_low, std_high), ("x", "mean", "std_low", "std_high")
+    ):
+        try:
+            var / 1
+        except:
+            raise TypeError(err_msg.format(name))
     # raises Exception if shapes don't match
-    mean * std_low 
+    mean * std_low
     mean * std_high
     std_low * std_high
     # OK let's go
-    f = lambda t, mu, s: np.exp(-(t-mu)**2/(2*s**2))
+    f = lambda t, mu, s: np.exp(-((t - mu) ** 2) / (2 * s**2))
     # use the shape with the most dimensions
-    shapes = [i.shape if np.iterable(i) else (1,)
-              for i in (mean,std_low,std_high)]
+    shapes = [i.shape if np.iterable(i) else (1,) for i in (mean, std_low, std_high)]
     j = np.argmax([len(s) for s in shapes])
     shape = shapes[j]
     # simpler if only scalars
@@ -84,21 +76,22 @@ def asym_normal_pdf(x, mean, std_low, std_high):
     if x.size == 1:
         x = x * np.ones(shape)
     else:
-        x = np.array(list(x)*np.prod(shape[:-1])).reshape(shape)
+        x = np.array(list(x) * np.prod(shape[:-1])).reshape(shape)
     pdf = np.zeros(x.size)
     # need to flatten to allow masking
     x = x.reshape(-1)
     mean = mean.reshape(-1)
     std_low = std_low.reshape(-1)
     std_high = std_high.reshape(-1)
-    j = (x < mean)
+    j = x < mean
     pdf[j] = f(x[j], mean[j], std_low[j])
     pdf[~j] = f(x[~j], mean[~j], std_high[~j])
     return pdf.reshape(shape)
 
 
-def bootstrap(function, t, n_obj=0, n_samples=1000,
-              full_output=False, asym_errors=False, **kwargs):
+def bootstrap(
+    function, t, n_obj=0, n_samples=1000, full_output=False, asym_errors=False, **kwargs
+):
     """
     Bootstrap resampling for a given statistic
 
@@ -133,14 +126,17 @@ def bootstrap(function, t, n_obj=0, n_samples=1000,
                   (asym_errors==True).
 
     """
-    if hasattr(function, '__iter__'):
+    if hasattr(function, "__iter__"):
+
         def compute(function, tj):
             if len(tj.shape) > 1:
                 s = [f(*tj) for f in function]
             else:
                 s = [f(tj) for f in function]
             return np.array(s)
+
     else:
+
         def compute(function, tj):
             if len(tj.shape) > 1:
                 return function(*tj)
@@ -148,23 +144,30 @@ def bootstrap(function, t, n_obj=0, n_samples=1000,
 
     t = np.array(t)
     if len(t.shape) > 2:
-        raise TypeError('data array can have at most 2 dimensions')
+        raise TypeError("data array can have at most 2 dimensions")
 
     n = t.shape[-1]
     if n_obj == 0:
-      n_obj = n
+        n_obj = n
     x = []
     if len(t.shape) > 1:
-        x = [compute(function, np.array([ti[random.randint(0, n, n_obj)]
-                                            for ti in t])) \
-             for i in xrange(n_samples)]
+        x = [
+            compute(
+                function, np.array([ti[np.random.randint(0, n, n_obj)] for ti in t])
+            )
+            for i in range(n_samples)
+        ]
     else:
-        x = [compute(function, t[random.randint(0, n, n_obj)]) \
-             for i in xrange(n_samples)]
+        x = [
+            compute(function, t[np.random.randint(0, n, n_obj)])
+            for i in range(n_samples)
+        ]
     if asym_errors:
+
         def err(y):
             yo = np.median(y)
-            return np.absolute(np.percentile(y, [16,84]) - yo)
+            return np.absolute(np.percentile(y, [16, 84]) - yo)
+
         if isinstance(x[0], float):
             out = err(x)
         else:
@@ -180,16 +183,16 @@ def bootstrap(function, t, n_obj=0, n_samples=1000,
     return out
 
 
-def Cbi(x, c=6.):
+def Cbi(x, c=6.0):
     """
     Biweight Location estimator
     """
     mad = MAD(x)
     m = np.median(x)
     u = (x - m) / (c * mad)
-    good = (abs(u) < 1)
-    num = sum((x[good] - m) * (1 - u[good]**2) ** 2)
-    den = sum((1 - u[good]**2) ** 2)
+    good = np.abs(u) < 1
+    num = np.sum((x[good] - m) * (1 - u[good] ** 2) ** 2)
+    den = np.sum((1 - u[good] ** 2) ** 2)
     return m + num / den
 
 
@@ -202,8 +205,8 @@ def draw(x, weights, size=None):
     """
     weights /= np.sum(weights)
     if size is None:
-        return x[digitize(random.random(1), cumsum(weights))][0]
-    return x[digitize(random.random(size), cumsum(weights))]
+        return x[np.digitize(np.random.random(1), np.cumsum(weights))][0]
+    return x[np.digitize(np.random.random(size), np.cumsum(weights))]
 
 
 def generalized_erf(x, a, b, c=1, d=0):
@@ -223,11 +226,18 @@ def generalized_erf(x, a, b, c=1, d=0):
     d : float or array-like
         floor of the function, reached for `x << c`
     """
-    return d + 0.5*c*(1 + erf(a*(x-b)))
+    return d + 0.5 * c * (1 + erf(a * (x - b)))
 
 
-def jackknife(function, t, n_remove=1, n_samples=1000,
-              full_output=False, asym_errors=False, **kwargs):
+def jackknife(
+    function,
+    t,
+    n_remove=1,
+    n_samples=1000,
+    full_output=False,
+    asym_errors=False,
+    **kwargs
+):
     """
     Jackknife resampling for a given statistic
 
@@ -260,14 +270,17 @@ def jackknife(function, t, n_remove=1, n_samples=1000,
                   (asym_errors==True).
 
     """
-    if hasattr(function, '__iter__'):
+    if hasattr(function, "__iter__"):
+
         def compute(function, tj, **kwargs):
             if len(tj.shape) > 1:
                 s = [f(*tj, **kwargs) for f in function]
             else:
                 s = [f(tj, **kwargs) for f in function]
             return np.array(s)
+
     else:
+
         def compute(function, tj, **kwargs):
             if len(tj.shape) > 1:
                 return function(*tj, **kwargs)
@@ -275,7 +288,7 @@ def jackknife(function, t, n_remove=1, n_samples=1000,
 
     t = np.array(t)
     if len(t.shape) > 2:
-        raise TypeError('t can have at most 2 dimensions')
+        raise TypeError("t can have at most 2 dimensions")
 
     n = t.shape[-1]
     if n_obj == 0:
@@ -283,17 +296,19 @@ def jackknife(function, t, n_remove=1, n_samples=1000,
     x = []
     if len(t.shape) > 1:
         for ii in xrange(n_samples):
-            j = random.randint(0, n, n-n_remove)
+            j = np.random.randint(0, n, n - n_remove)
             t1 = np.array([ti[j] for ti in t])
             x.append(compute(function, t1, **kwargs))
     else:
         for i in xrange(n_samples):
-            j = random.randint(0, n, n-n_remove)
+            j = np.random.randint(0, n, n - n_remove)
             x.append(compute(function, t[j], **kwargs))
     if asym_errors:
+
         def err(y):
             yo = np.median(y)
-            return np.absolute(np.percentile(y, [16,84]) - yo)
+            return np.absolute(np.percentile(y, [16, 84]) - yo)
+
         if isinstance(x[0], float):
             out = err(x)
         else:
@@ -320,9 +335,11 @@ def percentile_from_histogram(hist, centers, p):
 
     """
     cdf = np.cumsum(hist)
-    cdf_thin = interp1d(centers, cdf/cdf.max(), kind='slinear')
+    cdf_thin = interp1d(centers, cdf / cdf.max(), kind="slinear")
+
     def root(x):
-        return cdf_thin(x) - p/100.
+        return cdf_thin(x) - p / 100.0
+
     val = optimize.brentq(root, centers[0], centers[-1])
     return val
 
@@ -371,7 +388,7 @@ def pte(chi2, cov, cinv=None, n_samples=10000, return_samples=False):
     return pte
 
 
-def rms(x, clip=3, which='both', center='median', tol=1e-3):
+def rms(x, clip=3, which="both", center="median", tol=1e-3):
     """Root-mean-square value
 
     Typically used to calculate the noise in an image. Infinite or nan
@@ -399,37 +416,36 @@ def rms(x, clip=3, which='both', center='median', tol=1e-3):
     s = 10 * np.std(x)
     if clip == 0:
         return s
-    m = {'median': np.median, 'mean': np.mean, 'Cbi': Cbi}
+    m = {"median": np.median, "mean": np.mean, "Cbi": Cbi}
     m = m[center]
-    while (np.std(x)/s - 1) > tol:
+    while (np.std(x) / s - 1) > tol:
         s = np.std(x)
         mx = m(x)
-        if which in ('both', 'positive'):
-            x = x[x - mx < clip*s]
-        if which in ('both', 'negative'):
-            x = x[mx - x < clip*s]
+        if which in ("both", "positive"):
+            x = x[x - mx < clip * s]
+        if which in ("both", "negative"):
+            x = x[mx - x < clip * s]
     return np.std(x)
 
 
-def Sbi(x, c=9., location='median'):
+def Sbi(x, c=9.0, location="median"):
     """
     Biweight Scale estimator
     """
     n = len(x)
     mad = MAD(x)
-    if location == 'median':
+    if location == "median":
         m = np.median(x)
-    elif location == 'biweight':
+    elif location == "biweight":
         m = Cbi(x)
     u = (x - m) / (c * mad)
-    good = (abs(u) < 1)
-    num = sum((x[good] - m) ** 2 * (1 - u[good]**2) ** 4)
-    den = sum((1 - u[good]**2) * (1 - 5 * u[good]**2))
-    return (n / (n - 1)**0.5) * num**0.5 / abs(den)
+    good = np.abs(u) < 1
+    num = np.sum((x[good] - m) ** 2 * (1 - u[good] ** 2) ** 4)
+    den = np.sum((1 - u[good] ** 2) * (1 - 5 * u[good] ** 2))
+    return (n / (n - 1) ** 0.5) * num**0.5 / abs(den)
 
 
-def sigmaclip(sample, clip=3, loc=np.median, scale=np.std,
-              ret='sample'):
+def sigmaclip(sample, clip=3, loc=np.median, scale=np.std, ret="sample"):
     """
     returns the resulting array, the median (or average), and the standard
     deviation of it . *ret* can be 'sample', in which case the function
@@ -440,11 +456,11 @@ def sigmaclip(sample, clip=3, loc=np.median, scale=np.std,
     med = loc(sample)
     std = scale(sample)
     sample_med = sample - med
-    if ret == 'sample':
-        return sample[abs(sample_med) < clip * std]
-    elif ret == 'indices':
+    if ret == "sample":
+        return sample[np.abs(sample_med) < clip * std]
+    elif ret == "indices":
         ind = np.arange(len(sample))
-        return ind[abs(sample_med) < clip * std]
+        return ind[np.abs(sample_med) < clip * std]
     return
 
 
@@ -462,10 +478,10 @@ def wstd(X, weights, xo=None, axis=None):
     """
     # if means are not given, calculate weighted means
     if xo == None:
-        xo = np.sum(weights*X, axis=axis) / np.sum(weights, axis=axis)
-    j = (weights > 0)
-    num = np.sum(weights * (X-xo)**2, axis=axis)
-    den = (np.sum(j, axis=axis)-1.) / np.sum(j, axis=axis) \
-          * np.sum(weights, axis=axis)
-    return (num/den)**0.5
-
+        xo = np.sum(weights * X, axis=axis) / np.sum(weights, axis=axis)
+    j = weights > 0
+    num = np.sum(weights * (X - xo) ** 2, axis=axis)
+    den = (
+        (np.sum(j, axis=axis) - 1.0) / np.sum(j, axis=axis) * np.sum(weights, axis=axis)
+    )
+    return (num / den) ** 0.5
