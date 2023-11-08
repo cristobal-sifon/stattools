@@ -295,12 +295,12 @@ def jackknife(
         n_obj = n
     x = []
     if len(t.shape) > 1:
-        for ii in xrange(n_samples):
+        for ii in range(n_samples):
             j = np.random.randint(0, n, n - n_remove)
             t1 = np.array([ti[j] for ti in t])
             x.append(compute(function, t1, **kwargs))
     else:
-        for i in xrange(n_samples):
+        for i in range(n_samples):
             j = np.random.randint(0, n, n - n_remove)
             x.append(compute(function, t[j], **kwargs))
     if asym_errors:
